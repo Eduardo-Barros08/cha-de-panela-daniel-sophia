@@ -1,14 +1,11 @@
 // Chá de Panela Daniel & Sophia — schema do banco de dados
-// SQLite por padrão (zero configuração local). Para PostgreSQL/Supabase:
-// altere o provider abaixo para "postgresql" e a DATABASE_URL em .env.
-// Nenhuma coluna usa recursos exclusivos de SQLite.
-
+// Produção: PostgreSQL (Supabase). Local: troque provider para "sqlite" e use file:./dev.db
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
