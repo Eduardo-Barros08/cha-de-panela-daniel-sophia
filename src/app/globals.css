@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --paper: #faf8f2;
+  --ink: #1a1a1a;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: "Cormorant Garamond", Georgia, serif;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-ink text-bamboo-50 px-8 py-3.5
+      text-sm uppercase tracking-[0.2em] font-medium transition-all duration-300
+      hover:bg-inox-800 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-inox-400
+      focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-inox-400/60 bg-white/70
+      text-inox-800 px-8 py-3.5 text-sm uppercase tracking-[0.2em] font-medium transition-all duration-300
+      hover:border-ink hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-inox-400
+      focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .card {
+    @apply rounded-2xl border border-bamboo-200/70 bg-white/80 shadow-[0_2px_24px_rgba(90,80,50,0.06)];
+  }
+  .input {
+    @apply w-full rounded-xl border border-bamboo-200 bg-white px-4 py-3 text-[15px] text-ink
+      placeholder:text-inox-400 focus:border-inox-600 focus:outline-none focus:ring-2 focus:ring-bamboo-200
+      transition disabled:bg-bamboo-50 disabled:opacity-70;
+  }
+  .label {
+    @apply block text-xs font-medium uppercase tracking-[0.14em] text-inox-600 mb-1.5;
+  }
+  .section-title {
+    @apply font-display text-3xl sm:text-4xl text-ink;
+  }
+  .ornament {
+    @apply flex items-center justify-center gap-3 text-bamboo-400;
+  }
+  .ornament::before,
+  .ornament::after {
+    content: "";
+    @apply block h-px w-12 bg-bamboo-300;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.7s ease-out both;
+}
+
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.25s; }
+.delay-3 { animation-delay: 0.4s; }
+.delay-4 { animation-delay: 0.55s; }
