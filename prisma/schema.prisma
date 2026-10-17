@@ -1,0 +1,156 @@
+// Chá de Panela Daniel & Sophia — schema do banco de dados
+// SQLite por padrão (zero configuração local). Para PostgreSQL/Supabase:
+// altere o provider abaixo para "postgresql" e a DATABASE_URL em .env.
+// Nenhuma coluna usa recursos exclusivos de SQLite.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("admin") // "admin" | "owner"
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+model Event {
+  id               String   @id @default(cuid())
+  slug             String   @unique // "daniel-sophia"
+  coupleNames      String
+  eventName        String   @default("Chá de Panela")
+  eventDate        DateTime
+  eventTime        String
+  venueName        String
+  venueAddress     String
+  venueDetails     String?
+  welcomeMessage   String
+  bibleVerseRef    String   @default("Provérbios 24:3")
+  bibleVerseText   String
+  thanksMessage    String
+  giftRegistryUrl  String?
+  giftNotes        String?
+  rsvpOpen         Boolean  @default(true)
+  rsvpDeadline     DateTime?
+  maxMembersPerRsvp Int     @default(10)
+  extraInfo        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  groups           ConfirmationGroup[]
+}
+
+model Guest {
+  id          String       @id @default(cuid())
+  fullName    String
+  category    String       @default("outros") // familia_noivo | amigos_noivo | familia_noiva | amigos_noiva | amigos_noivos | outros
+  memberType  String       @default("adulto") // adulto | crianca
+  isChild     Boolean      @default(false)
+  notes       String?
+  source      String       @default("importado") // importado | convidado | admin
+  needsReview Boolean      @default(false)
+  active      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  permission  GuestPermission?
+  groupMember GroupMember?
+  rsvps       Rsvp[]
+  auditLogs   AuditLog[]
+
+  @@index([fullName])
+  @@index([category])
+}
+
+model ConfirmationGroup {
+  id        String   @id @default(cuid())
+  name      String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   String
+  members   GroupMember[]
+  confirmations Confirmation[]
+
+  @@index([eventId])
+}
+
+model GroupMember {
+  id    String @id @default(cuid())
+  role  String @default("membro") // responsavel | membro
+  group ConfirmationGroup @relation(fields: [groupId], references: [id])
+  groupId String
+  guest Guest    @relation(fields: [guestId], references: [id])
+  guestId String @unique
+
+  @@index([groupId])
+}
+
+model Confirmation {
+  id          String   @id @default(cuid())
+  code        String   @unique @default(cuid())
+  // token de gerenciamento: imprevisível, revogável, nunca sequencial
+  manageToken String   @unique @default(cuid())
+  status      String   @default("pendente") // pendente | confirmada | parcial
+  responsibleGuestId String? @unique
+  group       ConfirmationGroup @relation(fields: [groupId], references: [id])
+  groupId     String
+  email       String? // contato opcional do responsável (não usado como credencial)
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  rsvps       Rsvp[]
+  auditLogs   AuditLog[]
+
+  @@index([groupId])
+}
+
+model Rsvp {
+  id             String   @id @default(cuid())
+  guest          Guest    @relation(fields: [guestId], references: [id])
+  guestId        String   @unique
+  confirmation   Confirmation @relation(fields: [confirmationId], references: [id])
+  confirmationId String
+  attending      Boolean? // null = pendente
+  isChild        Boolean  @default(false)
+  respondedAt    DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([confirmationId])
+}
+
+model GuestPermission {
+  id             String   @id @default(cuid())
+  guest          Guest    @relation(fields: [guestId], references: [id])
+  guestId        String   @unique
+  // "manage" = pode ver/editar a confirmação do próprio grupo
+  scope          String   @default("manage")
+  email          String?
+  emailVerified  Boolean  @default(false)
+  revoked        Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actor       String   // "admin:<email>" | "convidado:<token>" | "sistema"
+  action      String   // "rsvp.create" | "rsvp.update" | "guest.update" | ...
+  targetGuest Guest?   @relation(fields: [guestId], references: [id])
+  guestId     String?
+  confirmation Confirmation? @relation(fields: [confirmationId], references: [id])
+  confirmationId String?
+  before      String?  // JSON
+  after       String?  // JSON
+  createdAt   DateTime @default(now())
+
+  @@index([confirmationId])
+  @@index([guestId])
+  @@index([createdAt])
+}
