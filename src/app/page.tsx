@@ -13,9 +13,8 @@ export default async function Home() {
           <Link href="/admin" className="btn-secondary mt-6">
             Painel dos noivos
           </Link>
-        </div>
-      </main>
-    );
+        </main>
+      );
   }
 
   const dateLabel = new Intl.DateTimeFormat("pt-BR", {
@@ -65,14 +64,20 @@ export default async function Home() {
             <p className="font-display mt-2 text-2xl capitalize">{dateLabel}</p>
             <p className="mt-1 text-sm text-inox-600">às {event.eventTime}</p>
           </div>
-          <div className="card p-7 text-center">
+          <a
+            href={"https://www.google.com/maps/place/Condom%C3%ADnio+Total+Ville+I/@-8.7919503,-63.8541169,17z/data=!3m1!4b1!4m6!3m5!1s0x92325b856ae9dc29:0xb09edcd56e41a11f!8m2!3d-8.7919503!4d-63.8541169!16s%2Fg%2F11c5stp898?entry=ttu&g_ep=EgoyMDI2MTAxNC4wIKXMDSoASAFQAw%3D%3D"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="card block p-7 text-center transition-transform duration-200 hover:-translate-y-1"
+          >
             <p className="label">Local</p>
             <p className="font-display mt-2 text-2xl">{event.venueName}</p>
             <p className="mt-1 text-sm text-inox-600">
               {event.venueAddress}
               {event.venueDetails ? ` — ${event.venueDetails}` : ""}
             </p>
-          </div>
+            <p className="mt-3 text-xs uppercase tracking-[0.2em] text-inox-600">Ver no mapa ↗</p>
+          </a>
         </section>
 
         {/* Ações */}
