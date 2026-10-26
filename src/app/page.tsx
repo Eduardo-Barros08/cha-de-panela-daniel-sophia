@@ -13,8 +13,9 @@ export default async function Home() {
           <Link href="/admin" className="btn-secondary mt-6">
             Painel dos noivos
           </Link>
-        </main>
-      );
+        </div>
+      </main>
+    );
   }
 
   const dateLabel = new Intl.DateTimeFormat("pt-BR", {
