@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Gift = { code: string; store: "bigazine" | "havan"; name: string; price?: number; url: string; mapUrl?: string; image?: string };
+type Gift = { code: string; store: "bigazine" | "havan"; name: string; price?: number; url: string; mapUrl?: string; image?: string; illustrative?: boolean };
 type Chosen = { store: string; code: string } | null;
 type GiftData = { bigazine: Gift[]; havan: Gift[]; havanListUrl: string; chosen: Chosen };
 
@@ -11,18 +11,27 @@ const PLACEHOLDER = "/presentes/placeholder.svg";
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 function GiftImage({ gift }: { gift: Gift }) {
-  // Ordem: foto da loja -> foto local em public/presentes -> imagem padrão
-  const sources = [gift.image, `/presentes/${gift.code}.jpg`, PLACEHOLDER].filter(Boolean) as string[];
+  // Foto exata: loja -> arquivo local. Foto ilustrativa: arquivo local (se existir) -> ilustração.
+  const local = `/presentes/${gift.code}.jpg`;
+  const sources = (gift.illustrative ? [local, gift.image, PLACEHOLDER] : [gift.image, local, PLACEHOLDER]).filter(Boolean) as string[];
   const [i, setI] = useState(0);
+  const showingIllustration = !!gift.illustrative && sources[i] === gift.image;
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={sources[i]}
-      alt={gift.name}
-      loading="lazy"
-      className="aspect-square w-full object-cover"
-      onError={() => setI((n) => Math.min(n + 1, sources.length - 1))}
-    />
+    <div className="relative">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={sources[i]}
+        alt={gift.name}
+        loading="lazy"
+        className="aspect-square w-full object-cover"
+        onError={() => setI((n) => Math.min(n + 1, sources.length - 1))}
+      />
+      {showingIllustration && (
+        <span className="absolute bottom-2 right-2 rounded-full bg-white/85 px-2 py-0.5 text-[10px] text-inox-600">
+          Foto ilustrativa
+        </span>
+      )}
+    </div>
   );
 }
 

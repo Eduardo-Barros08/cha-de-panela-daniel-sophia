@@ -65,7 +65,7 @@ async function resolveOne(code: string): Promise<Resolved | null> {
 export async function withBigazineLinks(gifts: Gift[]): Promise<Gift[]> {
   try {
     const found = await Promise.all(gifts.map((g) => resolveOne(g.code)));
-    return gifts.map((g, i) => ({ ...g, url: found[i]?.url ?? g.url, image: found[i]?.image ?? g.image }));
+    return gifts.map((g, i) => ({ ...g, url: found[i]?.url ?? g.url, image: found[i]?.image ?? g.image, illustrative: found[i]?.image ? false : g.illustrative }));
   } catch {
     return gifts;
   }

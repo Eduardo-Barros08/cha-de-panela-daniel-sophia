@@ -20,6 +20,7 @@ export type Gift = {
   url: string; // para onde o clique leva (Bigazine: página do produto; Havan: pagamento)
   mapUrl?: string; // Bigazine: localização da loja
   image?: string; // foto do produto (preenchida automaticamente para a Bigazine)
+  illustrative?: boolean; // true = a foto é de um produto parecido, não do item exato
 };
 
 export const STORE_LABELS: Record<GiftStore, string> = {
@@ -42,6 +43,31 @@ const bigazine = (code: string, name: string, price: number): Gift => ({
   url: `${BIGAZINE_SITE_URL}/search?q=${code}`, // trocado pelo link real do produto no servidor
   mapUrl: BIGAZINE_MAPS_URL,
 });
+
+/**
+ * Itens da Bigazine que não têm página no site online com este código:
+ * usamos a foto de um produto parecido da própria loja, só como ilustração.
+ * Para trocar pela foto real, salve public/presentes/<codigo>.jpg (tem prioridade).
+ */
+const BIGAZINE_ILLUSTRATIONS: Record<string, string> = {
+  "99871": "shopify01-83204-83204-1_ab3a86d4-2aee-4ea8-ba0a-dfe21c0a1f21.jpg",
+  "128440": "shopify01-128458-128458_4dcbec47-65f4-48d5-9c28-931326311517.jpg",
+  "133078": "shopify01-68160-68160-1_2bf31363-fe31-4d27-98b9-df36830ee477.jpg",
+  "107466": "shopify01-108476-108476-1_227c202c-22b4-463a-8d86-142939ec28d3.jpg",
+  "107465": "shopify01-107582-107582-1_d7a356bb-6a6c-4b25-a8e3-2a8818fd2050.jpg",
+  "134691": "shopify01-110705-110705_b647480a-bda0-4ffd-acee-15ac2e7a32c7.jpg",
+  "133174": "shopify01-68175-68175-1_e9dc3ba4-006b-4004-929e-eded8a3f1dab.jpg",
+  "119653": "shopify01-84588-84588-1_bb91b9ca-c1e4-4f24-8471-19387968cbbb.jpg",
+  "107462": "shopify01-115324-115324-1_cfd6ed84-0f98-43b4-8fb2-452c04bd3f00.jpg",
+  "115339": "shopify01-71913-71913-1_72476d12-eec2-439a-bd88-97ce5fb224a8.jpg",
+  "122137": "shopify01-122335-122335_3b1a0f5c-e437-4c82-a6cf-978ec8075627.jpg",
+  "129905": "shopify01-129904-129904_42bd6e37-c453-41b6-9593-b3b33ffa18d0.jpg",
+  "133077": "shopify01-101399-101399-1_7704e6c6-61f6-45b4-a06b-287459d36bad.jpg",
+  "133081": "shopify01-73875-73875-1_d526b306-2a46-400b-85ab-caf4ca93ca79.jpg",
+  "133082": "shopify01-101398-101398-1_9ea54c46-4b66-40f3-ba67-74db37c52ca2.jpg",
+  "133359": "shopify01-70927-70927-1_ff80ddf2-34cf-4c7e-af5a-65b447ae9bc7.jpg",
+};
+const BIGAZINE_CDN = "https://cdn.shopify.com/s/files/1/0964/7711/8753/files/";
 
 export const BIGAZINE_GIFTS: Gift[] = [
   bigazine("112568", "Aparelho de jantar/chá, 20 peças Eco Aura 9069", 299.9),
@@ -70,6 +96,14 @@ export const BIGAZINE_GIFTS: Gift[] = [
   bigazine("121395", "Travessa quadrada com tampa de bambu, 1,1 L AZ", 39.9),
   bigazine("121394", "Travessa retangular com tampa de bambu, 2,2 L AZ", 49.9),
 ];
+
+for (const g of BIGAZINE_GIFTS) {
+  const f = BIGAZINE_ILLUSTRATIONS[g.code];
+  if (f) {
+    g.image = BIGAZINE_CDN + f;
+    g.illustrative = true;
+  }
+}
 
 const havan = (code: string, name: string, price: number, imageId: string): Gift => ({
   code,
