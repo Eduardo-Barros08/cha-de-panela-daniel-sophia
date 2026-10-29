@@ -5,7 +5,7 @@
 import { execSync } from "child_process";
 import { PrismaClient } from "@prisma/client";
 import { saveRsvp, computeStats, deleteGuest, hasConfirmedAttendance, listGuestRows } from "../src/lib/data";
-import { findGift, BIGAZINE_GIFTS } from "../src/lib/gifts";
+import { findGift, BIGAZINE_GIFTS, HAVAN_GIFTS } from "../src/lib/gifts";
 import { pickBigazineProduct } from "../src/lib/bigazine";
 import { rsvpInputSchema } from "../src/lib/validation";
 
@@ -132,6 +132,7 @@ async function main() {
 
   console.log("\n[6] Presentes");
   check("catálogo Bigazine tem 25 itens com código único", BIGAZINE_GIFTS.length === 25 && new Set(BIGAZINE_GIFTS.map((g) => g.code)).size === 25);
+  check("catálogo Havan tem 28 itens com código único e foto", HAVAN_GIFTS.length === 28 && new Set(HAVAN_GIFTS.map((g) => g.code)).size === 28 && HAVAN_GIFTS.every((g) => !!g.image));
   check("total do catálogo confere com a proposta (R$ 2.535,89)", Math.round(BIGAZINE_GIFTS.reduce((a, g) => a + (g.price ?? 0), 0) * 100) === 253589);
   check("findGift acha por loja+código e rejeita código inexistente", findGift("bigazine", "112568")?.name.startsWith("Aparelho de jantar") === true && !findGift("bigazine", "000"));
   const prods = [
