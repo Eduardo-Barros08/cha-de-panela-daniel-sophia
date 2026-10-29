@@ -27,6 +27,9 @@ type GuestRow = {
   attending: boolean | null;
   groupName: string | null;
   responsibleName: string | null;
+  giftName: string | null;
+  giftStore: string | null;
+  giftCode: string | null;
   updatedAt: string;
 };
 
@@ -134,6 +137,29 @@ export default function AdminDashboard() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Erro ao salvar.");
+        return;
+      }
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function deleteGuest(g: GuestRow) {
+    const ok = confirm(
+      `Excluir "${g.fullName}" definitivamente?\n\nIsso apaga a pessoa e a resposta dela. Se ela for a última do grupo, a confirmação e o presente escolhido também somem.\n\nEsta ação não pode ser desfeita.`
+    );
+    if (!ok) return;
+    setBusyId(g.id);
+    try {
+      const res = await fetch("/api/admin/guests", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guestId: g.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Erro ao excluir.");
         return;
       }
       await load();
@@ -253,7 +279,7 @@ export default function AdminDashboard() {
 
         {/* Tabela */}
         <section className="card mt-5 overflow-x-auto">
-          <table className="w-full min-w-[760px] text-sm">
+          <table className="w-full min-w-[980px] text-sm">
             <caption className="sr-only">Lista de convidados</caption>
             <thead>
               <tr className="border-b border-bamboo-200 bg-bamboo-50/60 text-left">
@@ -261,6 +287,7 @@ export default function AdminDashboard() {
                 <th scope="col" className="px-4 py-3 font-medium">Grupo</th>
                 <th scope="col" className="px-4 py-3 font-medium">Categoria</th>
                 <th scope="col" className="px-4 py-3 font-medium">Resposta</th>
+                <th scope="col" className="px-4 py-3 font-medium">Presente do grupo</th>
                 <th scope="col" className="px-4 py-3 font-medium">Origem</th>
                 <th scope="col" className="px-4 py-3 font-medium text-right">Ações rápidas</th>
               </tr>
@@ -291,6 +318,18 @@ export default function AdminDashboard() {
                     >
                       {g.attending === true ? "Confirmado" : g.attending === false ? "Não vai" : "Pendente"}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    {g.giftName ? (
+                      <>
+                        <span className="text-inox-800">{g.giftName}</span>
+                        <span className="mt-0.5 block text-inox-600">
+                          {g.giftStore === "havan" ? "Havan" : "Bigazine"} · código {g.giftCode}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-inox-400">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-xs text-inox-600">
                     {g.source === "importado" ? "Lista inicial" : g.source === "convidado" ? "Informado pelo convidado" : "Admin"}
@@ -340,13 +379,22 @@ export default function AdminDashboard() {
                       >
                         ⚑
                       </button>
+                      <button
+                        disabled={busyId === g.id}
+                        onClick={() => deleteGuest(g)}
+                        className="rounded-full border border-red-200 px-2.5 py-1 text-xs text-red-700 hover:border-red-500 hover:bg-red-50"
+                        title="Excluir convidado"
+                        aria-label={`Excluir ${g.fullName}`}
+                      >
+                        🗑
+                      </button>
                     </div>
                   </td>
                 </tr>
               ))}
               {pageRows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-inox-600">
+                  <td colSpan={7} className="px-4 py-10 text-center text-inox-600">
                     Nenhum convidado encontrado com esses filtros.
                   </td>
                 </tr>

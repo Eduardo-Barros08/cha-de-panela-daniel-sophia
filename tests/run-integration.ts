@@ -4,7 +4,8 @@
  */
 import { execSync } from "child_process";
 import { PrismaClient } from "@prisma/client";
-import { saveRsvp, computeStats } from "../src/lib/data";
+import { saveRsvp, computeStats, deleteGuest, hasConfirmedAttendance, listGuestRows } from "../src/lib/data";
+import { findGift, BIGAZINE_GIFTS } from "../src/lib/gifts";
 import { rsvpInputSchema } from "../src/lib/validation";
 
 process.env.DATABASE_URL = "file:./test.db";
@@ -127,6 +128,43 @@ async function main() {
   check("confirmados + recusas + pendentes = total", stats.confirmed + stats.declined + stats.pending === stats.totalGuests);
   check("confirmações enviadas <= pessoas (famílias agrupadas)", stats.totalSubmissions <= stats.totalGuests);
   check("adultos + crianças = confirmados", stats.adultsConfirmed + stats.childrenConfirmed === stats.confirmed);
+
+  console.log("\n[6] Presentes");
+  check("catálogo Bigazine tem 25 itens com código único", BIGAZINE_GIFTS.length === 25 && new Set(BIGAZINE_GIFTS.map((g) => g.code)).size === 25);
+  check("total do catálogo confere com a proposta (R$ 2.535,89)", Math.round(BIGAZINE_GIFTS.reduce((a, g) => a + (g.price ?? 0), 0) * 100) === 253589);
+  check("findGift acha por loja+código e rejeita código inexistente", findGift("bigazine", "112568")?.name.startsWith("Aparelho de jantar") === true && !findGift("bigazine", "000"));
+  const confG = await prisma.confirmation.findUniqueOrThrow({ where: { id: r1.confirmation.id }, include: { rsvps: true } });
+  check("grupo com alguém confirmado pode escolher presente", hasConfirmedAttendance(confG));
+  await prisma.confirmation.update({
+    where: { id: confG.id },
+    data: { giftStore: "bigazine", giftCode: "112568", giftName: findGift("bigazine", "112568")!.name, giftChosenAt: new Date() },
+  });
+  const rowsG = await listGuestRows();
+  const rowEd = rowsG.find((r) => r.fullName === "Eduardo Teste da Silva");
+  check("painel mostra o presente escolhido na linha do convidado", rowEd?.giftCode === "112568" && rowEd?.giftStore === "bigazine");
+  const solo = await saveRsvp(
+    rsvpInputSchema.parse({ responsibleName: "Fulano Sem Presenca", members: [{ fullName: "Fulano Sem Presenca", isChild: false, attending: false }] }),
+    "test:runner"
+  );
+  const soloConf = await prisma.confirmation.findUniqueOrThrow({ where: { id: solo.confirmation.id }, include: { rsvps: true } });
+  check("quem recusou presença NÃO vê/escolhe presente", !hasConfirmedAttendance(soloConf));
+
+  console.log("\n[7] Exclusão de convidado");
+  const statsBefore = await computeStats();
+  const enzo = await prisma.guest.findFirstOrThrow({ where: { fullName: "Enzo Teste" } });
+  const delEnzo = await deleteGuest(enzo.id);
+  check("exclui integrante e mantém o grupo", delEnzo?.fullName === "Enzo Teste" && delEnzo.groupRemoved === false);
+  check("convidado e resposta foram apagados", (await prisma.guest.findUnique({ where: { id: enzo.id } })) === null && (await prisma.rsvp.findUnique({ where: { guestId: enzo.id } })) === null);
+  const statsAfter = await computeStats();
+  check("total de convidados diminuiu em 1", statsAfter.totalGuests === statsBefore.totalGuests - 1);
+  const edGuest = await prisma.guest.findFirstOrThrow({ where: { fullName: "Eduardo Teste da Silva" } });
+  await deleteGuest(edGuest.id); // era o responsável
+  const respNow = await prisma.groupMember.findMany({ where: { groupId: group.id, role: "responsavel" } });
+  check("ao excluir o responsável, outro integrante assume", respNow.length === 1);
+  const rest = await prisma.groupMember.findMany({ where: { groupId: group.id } });
+  for (const m of rest) await deleteGuest(m.guestId);
+  check("ao excluir o último, grupo e confirmação (com presente) somem", (await prisma.confirmationGroup.findUnique({ where: { id: group.id } })) === null && (await prisma.confirmation.findUnique({ where: { id: confG.id } })) === null);
+  check("excluir convidado inexistente retorna null", (await deleteGuest("nao-existe-123456")) === null);
 
   console.log(`\nResultado: ${pass} passaram, ${fail} falharam`);
   await prisma.$disconnect();

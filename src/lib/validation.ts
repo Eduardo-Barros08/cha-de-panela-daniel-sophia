@@ -67,3 +67,13 @@ export const adminEventUpdateSchema = z.object({
   rsvpDeadline: z.string().datetime().nullable().optional(),
   maxMembersPerRsvp: z.number().int().min(1).max(30).optional(),
 });
+
+export const adminGuestDeleteSchema = z.object({
+  guestId: z.string().min(10),
+});
+
+export const giftChoiceSchema = z.object({
+  token: z.string().min(10).max(100),
+  store: z.enum(["bigazine", "havan"]),
+  code: z.string().min(1).max(40),
+});

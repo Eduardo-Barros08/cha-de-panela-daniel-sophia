@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import GiftSection from "@/components/GiftSection";
 
 type Member = { fullName: string; isChild: boolean; attending: boolean | null };
 type Lookup = { responsibleName: string; status: string; updatedAt: string; members: Member[] };
@@ -125,6 +126,8 @@ export default function MinhaConfirmacaoClient({ token }: { token?: string }) {
               Voltar ao início
             </Link>
           </div>
+
+          {data.members.some((m) => m.attending === true) && <GiftSection token={value.trim()} />}
         </div>
       )}
     </div>

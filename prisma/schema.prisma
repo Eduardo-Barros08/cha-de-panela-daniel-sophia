@@ -100,6 +100,11 @@ model Confirmation {
   group       ConfirmationGroup @relation(fields: [groupId], references: [id])
   groupId     String
   email       String? // contato opcional do responsável (não usado como credencial)
+  // presente escolhido pelo grupo (opcional; preenchido quando o convidado clica em um item da lista)
+  giftStore    String?   // "bigazine" | "havan"
+  giftCode     String?
+  giftName     String?
+  giftChosenAt DateTime?
   submittedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt
   rsvps       Rsvp[]

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import GiftSection from "@/components/GiftSection";
 
 type Member = { fullName: string; isChild: boolean; attending: boolean | null };
 
@@ -110,6 +111,7 @@ export default function ConfirmarClient({
 
   if (done) {
     return (
+      <>
       <div className="card mx-auto max-w-lg p-10 text-center animate-fade-up">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-bamboo-100 text-2xl">
           ✓
@@ -137,6 +139,8 @@ export default function ConfirmarClient({
           </Link>
         </div>
       </div>
+      {members.some((m) => m.attending === true) && <GiftSection token={done.manageToken} />}
+      </>
     );
   }
 

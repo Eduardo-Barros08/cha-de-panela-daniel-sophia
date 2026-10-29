@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, logAudit, prisma } from "@/lib/auth";
-import { adminGuestUpdateSchema, adminEventUpdateSchema } from "@/lib/validation";
+import { adminGuestUpdateSchema, adminEventUpdateSchema, adminGuestDeleteSchema } from "@/lib/validation";
+import { deleteGuest } from "@/lib/data";
 import { broadcast } from "@/lib/realtime";
 
 export const dynamic = "force-dynamic";
@@ -96,6 +97,34 @@ export async function PUT(req: NextRequest) {
 
   await prisma.event.update({ where: { id: event.id }, data: data as never });
   logAudit({ actor: `admin:${session.email}`, action: "event.update", after: data });
+  broadcast("admin");
+  return NextResponse.json({ ok: true });
+}
+
+// Exclusão definitiva de convidado (somente admin autenticado)
+export async function DELETE(req: NextRequest) {
+  const session = await requireAdmin(req);
+  if (!session) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Requisição inválida." }, { status: 400 });
+  }
+  const parsed = adminGuestDeleteSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0]?.message || "Dados inválidos." }, { status: 400 });
+  }
+
+  const removed = await deleteGuest(parsed.data.guestId);
+  if (!removed) return NextResponse.json({ error: "Convidado não encontrado." }, { status: 404 });
+
+  logAudit({
+    actor: `admin:${session.email}`,
+    action: "guest.delete",
+    before: { fullName: removed.fullName, groupRemoved: removed.groupRemoved },
+  });
   broadcast("admin");
   return NextResponse.json({ ok: true });
 }

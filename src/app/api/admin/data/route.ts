@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   if (format === "csv") {
     // Exportação exige autorização — coberta pelo requireAdmin acima.
     const rows = await listGuestRows();
-    const header = "Nome;Categoria;Tipo;Resposta;Grupo;Origem;Revisao;UltimaAtualizacao";
+    const header = "Nome;Categoria;Tipo;Resposta;Grupo;Presente;Origem;Revisao;UltimaAtualizacao";
     const cat: Record<string, string> = {
       familia_noivo: "Família do noivo",
       amigos_noivo: "Amigos do noivo",
@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
         r.isChild ? "Criança" : "Adulto",
         r.attending === true ? "Confirmado" : r.attending === false ? "Não irá" : "Pendente",
         r.groupName ?? "-",
+        r.giftName ? `${r.giftName} (${r.giftStore === "havan" ? "Havan" : "Bigazine"} ${r.giftCode ?? ""})`.trim() : "-",
         r.source,
         r.needsReview ? "SIM" : "",
         r.updatedAt,

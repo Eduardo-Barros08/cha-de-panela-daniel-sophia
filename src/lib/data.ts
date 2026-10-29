@@ -67,6 +67,9 @@ export type GuestRow = {
   attending: boolean | null;
   groupName: string | null;
   responsibleName: string | null;
+  giftName: string | null;
+  giftStore: string | null;
+  giftCode: string | null;
   updatedAt: string;
 };
 
@@ -74,7 +77,16 @@ export async function listGuestRows(): Promise<GuestRow[]> {
   const guests = await prisma.guest.findMany({
     where: { active: true },
     include: {
-      groupMember: { include: { group: { select: { name: true } } } },
+      groupMember: {
+        include: {
+          group: {
+            select: {
+              name: true,
+              confirmations: { select: { giftName: true, giftStore: true, giftCode: true }, take: 1 },
+            },
+          },
+        },
+      },
       rsvps: { select: { attending: true, updatedAt: true } },
     },
     orderBy: [{ category: "asc" }, { fullName: "asc" }],
@@ -96,6 +108,9 @@ export async function listGuestRows(): Promise<GuestRow[]> {
       attending: rsvp ? rsvp.attending : null,
       groupName: g.groupMember?.group.name ?? null,
       responsibleName: isResponsible ? g.fullName : null,
+      giftName: g.groupMember?.group.confirmations[0]?.giftName ?? null,
+      giftStore: g.groupMember?.group.confirmations[0]?.giftStore ?? null,
+      giftCode: g.groupMember?.group.confirmations[0]?.giftCode ?? null,
       updatedAt: (rsvp ? rsvp.updatedAt : g.updatedAt).toISOString(),
     };
   });
@@ -267,4 +282,61 @@ export async function getConfirmationByToken(token: string) {
   });
   if (!confirmation) return null;
   return confirmation;
+}
+
+function statusFromRsvps(rsvps: { attending: boolean | null }[]): string {
+  if (rsvps.length === 0) return "pendente";
+  if (rsvps.every((r) => r.attending === true)) return "confirmada";
+  if (rsvps.every((r) => r.attending === false)) return "recusada";
+  return "parcial";
+}
+
+/**
+ * Exclui um convidado de forma definitiva (pessoa, resposta e vínculo com o grupo).
+ * - Se o grupo ficar vazio, o grupo e a confirmação dele também são removidos.
+ * - Se era o responsável e sobrou gente, o próximo integrante vira responsável.
+ * - O histórico (AuditLog) é mantido, apenas desvinculado da pessoa apagada.
+ * Tudo em transação: ou faz tudo, ou nada. Retorna null se o convidado não existe.
+ */
+export async function deleteGuest(guestId: string): Promise<{ fullName: string; groupRemoved: boolean } | null> {
+  return prisma.$transaction(async (tx) => {
+    const guest = await tx.guest.findUnique({ where: { id: guestId }, include: { groupMember: true } });
+    if (!guest) return null;
+    const groupId = guest.groupMember?.groupId ?? null;
+    const wasResponsible = guest.groupMember?.role === "responsavel";
+
+    await tx.auditLog.updateMany({ where: { guestId }, data: { guestId: null } });
+    await tx.rsvp.deleteMany({ where: { guestId } });
+    await tx.guestPermission.deleteMany({ where: { guestId } });
+    await tx.groupMember.deleteMany({ where: { guestId } });
+    await tx.guest.delete({ where: { id: guestId } });
+
+    let groupRemoved = false;
+    if (groupId) {
+      const rest = await tx.groupMember.findMany({ where: { groupId }, orderBy: { id: "asc" } });
+      if (rest.length === 0) {
+        const ids = (await tx.confirmation.findMany({ where: { groupId }, select: { id: true } })).map((c) => c.id);
+        await tx.auditLog.updateMany({ where: { confirmationId: { in: ids } }, data: { confirmationId: null } });
+        await tx.rsvp.deleteMany({ where: { confirmationId: { in: ids } } });
+        await tx.confirmation.deleteMany({ where: { groupId } });
+        await tx.confirmationGroup.delete({ where: { id: groupId } });
+        groupRemoved = true;
+      } else {
+        if (wasResponsible) {
+          await tx.groupMember.update({ where: { id: rest[0].id }, data: { role: "responsavel" } });
+        }
+        const confirmations = await tx.confirmation.findMany({ where: { groupId }, select: { id: true } });
+        for (const c of confirmations) {
+          const rsvps = await tx.rsvp.findMany({ where: { confirmationId: c.id }, select: { attending: true } });
+          await tx.confirmation.update({ where: { id: c.id }, data: { status: statusFromRsvps(rsvps) } });
+        }
+      }
+    }
+    return { fullName: guest.fullName, groupRemoved };
+  });
+}
+
+/** O convidado só vê/escolhe presentes se ao menos uma pessoa do grupo confirmou presença. */
+export function hasConfirmedAttendance(confirmation: { rsvps: { attending: boolean | null }[] }): boolean {
+  return confirmation.rsvps.some((r) => r.attending === true);
 }
