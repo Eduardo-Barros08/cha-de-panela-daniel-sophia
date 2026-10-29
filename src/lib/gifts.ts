@@ -3,7 +3,7 @@
  *
  * Duas lojas:
  *  - Bigazine (Porto Velho): itens da proposta de 26/10/2026 (válida até 25/11/2026).
- *    O clique leva à localização da loja no Google Maps.
+ *    O clique leva ao produto em bigazine.com.br; há também link da localização da loja.
  *  - Havan: itens da lista online. O clique leva à lista da Havan para pagamento.
  *
  * IMAGENS: coloque a foto de cada produto em  public/presentes/<codigo>.jpg
@@ -17,7 +17,9 @@ export type Gift = {
   store: GiftStore;
   name: string;
   price?: number; // em reais (opcional)
-  url: string; // para onde o clique leva
+  url: string; // para onde o clique leva (Bigazine: página do produto; Havan: pagamento)
+  mapUrl?: string; // Bigazine: localização da loja
+  image?: string; // foto do produto (preenchida automaticamente para a Bigazine)
 };
 
 export const STORE_LABELS: Record<GiftStore, string> = {
@@ -30,12 +32,15 @@ export const HAVAN_LIST_URL = "https://lista.havan.com.br/Convidado/ItensListaPr
 export const BIGAZINE_MAPS_URL =
   "https://www.google.com/maps/place/Bigazine+Porto+Velho/@-8.7447143,-63.8680604,17z/data=!3m1!4b1!4m6!3m5!1s0x923243ed46bac109:0xab1a35abb2b466b7!8m2!3d-8.7447143!4d-63.8680604!16s%2Fg%2F11t7vqt50w?entry=ttu&g_ep=EgoyMDI2MTAyNS4wIKXMDSoASAFQAw%3D%3D";
 
+export const BIGAZINE_SITE_URL = "https://www.bigazine.com.br";
+
 const bigazine = (code: string, name: string, price: number): Gift => ({
   code,
   store: "bigazine",
   name,
   price,
-  url: BIGAZINE_MAPS_URL,
+  url: `${BIGAZINE_SITE_URL}/search?q=${code}`, // trocado pelo link real do produto no servidor
+  mapUrl: BIGAZINE_MAPS_URL,
 });
 
 export const BIGAZINE_GIFTS: Gift[] = [

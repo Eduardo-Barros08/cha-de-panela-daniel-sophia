@@ -6,6 +6,7 @@ import { execSync } from "child_process";
 import { PrismaClient } from "@prisma/client";
 import { saveRsvp, computeStats, deleteGuest, hasConfirmedAttendance, listGuestRows } from "../src/lib/data";
 import { findGift, BIGAZINE_GIFTS } from "../src/lib/gifts";
+import { pickBigazineProduct } from "../src/lib/bigazine";
 import { rsvpInputSchema } from "../src/lib/validation";
 
 process.env.DATABASE_URL = "file:./test.db";
@@ -133,6 +134,14 @@ async function main() {
   check("catálogo Bigazine tem 25 itens com código único", BIGAZINE_GIFTS.length === 25 && new Set(BIGAZINE_GIFTS.map((g) => g.code)).size === 25);
   check("total do catálogo confere com a proposta (R$ 2.535,89)", Math.round(BIGAZINE_GIFTS.reduce((a, g) => a + (g.price ?? 0), 0) * 100) === 253589);
   check("findGift acha por loja+código e rejeita código inexistente", findGift("bigazine", "112568")?.name.startsWith("Aparelho de jantar") === true && !findGift("bigazine", "000"));
+  const prods = [
+    { url: "https://evil.com/products/x-112568-112568", image: "https://cdn.shopify.com/a.jpg" },
+    { url: "/products/outro-1125680-1125680" },
+    { url: "/products/aparelho-jantar-112568-112568?pr_prod=1", image: "//cdn.shopify.com/s/files/a.jpg?v=9&width=1" },
+  ];
+  const picked = pickBigazineProduct(prods, "112568");
+  check("resolvedor Bigazine escolhe só o produto exato do domínio da loja", picked?.url === "https://www.bigazine.com.br/products/aparelho-jantar-112568-112568" && picked.image === "https://cdn.shopify.com/s/files/a.jpg?v=9");
+  check("resolvedor Bigazine rejeita código inexistente", pickBigazineProduct(prods, "999") === null);
   const confG = await prisma.confirmation.findUniqueOrThrow({ where: { id: r1.confirmation.id }, include: { rsvps: true } });
   check("grupo com alguém confirmado pode escolher presente", hasConfirmedAttendance(confG));
   await prisma.confirmation.update({

@@ -3,6 +3,7 @@ import { prisma, rateLimit, clientIp, logAudit } from "@/lib/auth";
 import { getConfirmationByToken, hasConfirmedAttendance } from "@/lib/data";
 import { giftChoiceSchema } from "@/lib/validation";
 import { findGift, BIGAZINE_GIFTS, HAVAN_GIFTS, HAVAN_LIST_URL } from "@/lib/gifts";
+import { withBigazineLinks } from "@/lib/bigazine";
 import { broadcast } from "@/lib/realtime";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    bigazine: BIGAZINE_GIFTS,
+    bigazine: await withBigazineLinks(BIGAZINE_GIFTS),
     havan: HAVAN_GIFTS,
     havanListUrl: HAVAN_LIST_URL,
     chosen:

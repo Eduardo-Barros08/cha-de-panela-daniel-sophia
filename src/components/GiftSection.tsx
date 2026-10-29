@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Gift = { code: string; store: "bigazine" | "havan"; name: string; price?: number; url: string };
+type Gift = { code: string; store: "bigazine" | "havan"; name: string; price?: number; url: string; mapUrl?: string; image?: string };
 type Chosen = { store: string; code: string } | null;
 type GiftData = { bigazine: Gift[]; havan: Gift[]; havanListUrl: string; chosen: Chosen };
 
@@ -11,17 +11,17 @@ const PLACEHOLDER = "/presentes/placeholder.svg";
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 function GiftImage({ gift }: { gift: Gift }) {
+  // Ordem: foto da loja -> foto local em public/presentes -> imagem padrão
+  const sources = [gift.image, `/presentes/${gift.code}.jpg`, PLACEHOLDER].filter(Boolean) as string[];
+  const [i, setI] = useState(0);
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={`/presentes/${gift.code}.jpg`}
+      src={sources[i]}
       alt={gift.name}
       loading="lazy"
       className="aspect-square w-full object-cover"
-      onError={(e) => {
-        const img = e.currentTarget;
-        if (!img.src.endsWith(PLACEHOLDER)) img.src = PLACEHOLDER;
-      }}
+      onError={() => setI((n) => Math.min(n + 1, sources.length - 1))}
     />
   );
 }
@@ -74,15 +74,14 @@ export default function GiftSection({ token }: { token: string }) {
     const selected = chosen?.store === gift.store && chosen?.code === gift.code;
     return (
       <li key={`${gift.store}-${gift.code}`}>
+        <div className={`card group flex h-full flex-col overflow-hidden transition hover:-translate-y-0.5 hover:shadow-lg ${selected ? "ring-2 ring-ink" : ""}`}>
         <a
           href={gift.url}
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => registerChoice(gift)}
-          className={`card group block h-full overflow-hidden transition hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-inox-400 ${
-            selected ? "ring-2 ring-ink" : ""
-          }`}
-          aria-label={`${gift.name} — código ${gift.code}. Abre a ${gift.store === "havan" ? "Havan" : "localização da Bigazine"} em nova aba`}
+          className="block flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inox-400"
+          aria-label={`${gift.name} — código ${gift.code}. Abre ${gift.store === "havan" ? "a Havan" : "o produto na Bigazine"} em nova aba`}
         >
           <div className="relative">
             <GiftImage gift={gift} />
@@ -97,10 +96,21 @@ export default function GiftSection({ token }: { token: string }) {
             <p className="mt-2 text-xs text-inox-600">Código {gift.code}</p>
             {gift.price !== undefined && <p className="mt-1 text-xs text-inox-600">{brl(gift.price)}</p>}
             <p className="mt-3 text-xs uppercase tracking-[0.14em] text-inox-800 group-hover:underline">
-              {gift.store === "havan" ? "Ir para o pagamento →" : "Ver localização da loja →"}
+              {gift.store === "havan" ? "Ir para o pagamento →" : "Ver produto na loja →"}
             </p>
           </div>
         </a>
+        {gift.mapUrl && (
+          <a
+            href={gift.mapUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="border-t border-bamboo-200 px-4 py-2 text-center text-xs text-inox-600 hover:underline"
+          >
+            Ver localização da loja
+          </a>
+        )}
+        </div>
       </li>
     );
   }
@@ -128,7 +138,7 @@ export default function GiftSection({ token }: { token: string }) {
           <div>
             <h3 className="section-title text-center !text-2xl sm:!text-3xl">Loja Bigazine</h3>
             <p className="mt-2 text-center text-sm text-inox-600">
-              Toque no presente para ver a localização da loja. Informe o código ao comprar.
+              Toque no presente para ver o produto na Bigazine. Informe o código ao comprar.
             </p>
             <ul className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
               {data.bigazine.map(renderCard)}
