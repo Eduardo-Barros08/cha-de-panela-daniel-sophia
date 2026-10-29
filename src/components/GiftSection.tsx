@@ -105,7 +105,7 @@ export default function GiftSection({ token }: { token: string }) {
             <p className="mt-2 text-xs text-inox-600">Código {gift.code}</p>
             {gift.price !== undefined && <p className="mt-1 text-xs text-inox-600">{brl(gift.price)}</p>}
             <p className="mt-3 text-xs uppercase tracking-[0.14em] text-inox-800 group-hover:underline">
-              {gift.store === "havan" ? "Ir para o pagamento →" : "Ver produto na loja →"}
+              {gift.store === "havan" ? "Ver na Havan →" : "Ver produto na loja →"}
             </p>
           </div>
         </a>
@@ -159,7 +159,7 @@ export default function GiftSection({ token }: { token: string }) {
             {data.havan.length > 0 ? (
               <>
                 <p className="mt-2 text-center text-sm text-inox-600">
-                  Toque no presente para ir ao site da Havan e efetuar o pagamento.
+                  Toque no presente para abrir o produto no site da Havan e comprar. Informe o código ao comprar.
                 </p>
                 <ul className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
                   {data.havan.map(renderCard)}
